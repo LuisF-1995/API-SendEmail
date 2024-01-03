@@ -1,6 +1,7 @@
 package com.lurodev.apisendemail.Controller;
 
 import com.lurodev.apisendemail.Model.Email;
+import com.lurodev.apisendemail.Model.MailResponse;
 import com.lurodev.apisendemail.Services.EmailService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +18,8 @@ public class EmailController {
     }
 
     @PostMapping("/sendEmail")
-    public ResponseEntity<String> sendEmail(@RequestBody Email emailContent){
+    public ResponseEntity<MailResponse> sendEmail(@RequestBody Email emailContent){
+        MailResponse response = new MailResponse();
         try {
             // Verificar el servidor y establecer la configuración correspondiente para el envío
             String smtpHost;
@@ -28,17 +30,27 @@ public class EmailController {
                 smtpHost = "smtp.gmail.com";
             }
             else {
-                return ResponseEntity.badRequest().body("Servidor de correo no válido. Debe ser 'hotmail', 'outlook' o 'gmail'.");
+                response.setReponse("Servidor de correo no válido. Debe ser 'hotmail', 'outlook' o 'gmail'.");
+                response.setStatus(400);
+                response.setSuccess(false);
+                return ResponseEntity.badRequest().body(response);
             }
 
             emailContent.setSmtpHost(smtpHost);
 
             EmailService emailService = new EmailService(emailContent);
             emailService.sendEmail(emailContent.getRecipient(), emailContent.getSubject(), emailContent.getMessage(), emailContent.getAttachments());
-            return ResponseEntity.ok("Correo enviado correctamente.");
+
+            response.setReponse("Correo enviado correctamente.");
+            response.setStatus(200);
+            response.setSuccess(true);
+            return ResponseEntity.ok(response);
         }
         catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al enviar el correo: " + e.getMessage());
+            response.setReponse("Error al enviar el correo: " + e.getMessage());
+            response.setStatus(500);
+            response.setSuccess(false);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }
